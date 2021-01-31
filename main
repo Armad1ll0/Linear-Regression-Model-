@@ -1,0 +1,119 @@
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn import model_selection
+from sklearn import datasets 
+import statistics as stats
+
+#function to create sythnthetic data 
+new_x, new_y, p = datasets.make_regression(n_samples = 100, n_features = 1, n_informative = 1, noise = 10, coef = True)
+
+#finds min and max of each set 
+x1 = min(new_x)
+x2 = max(new_x)
+y1 = min(new_y)
+y2 = max(new_y)
+
+#sets the min and max of each data set as 10% bigger or smaller than largest and smallest values respectively in the data set 
+xmin = 0.95 * x1
+xmax = 1.05 * x2
+ymin = 0.95 * y1
+ymax = 1.05 * y2
+
+plt.figure()
+plt.scatter(new_x, new_y)
+plt.xlim(( xmin, xmax ))
+plt.ylim(( ymin, ymax ))
+plt.xlabel('synthetic x')
+plt.ylabel('synthetic y')
+plt.show()
+
+#function splits the data into test and train data, we then plot the in a very similar manner to what was done above 
+xtrain, xtest, ytrain, ytest = model_selection.train_test_split(new_x, new_y, test_size = 0.10)
+plt.figure()
+plt.scatter(xtrain, ytrain, s=14, c='b', label='Train')
+plt.scatter(xtest,ytest, s=14, c='r', label='Test')
+plt.xlim(( xmin, xmax ))
+plt.ylim(( ymin, ymax ))
+plt.legend(loc='upper left');
+plt.show()
+
+#gradient descent algo 
+def gradiant_descent_2(M, x, omega, y, alpha):
+    for i in range(M):
+        predict_y = omega[0] + omega[1]*x[i]
+        error = y[i] - predict_y
+        omega[0] = omega[0] + alpha*error*(1/M)
+        omega[1] = omega[1] + alpha*error*x[i]*(1/M)
+    return omega 
+
+#mean squared error algo 
+def compute_error(M, x, omega, y):
+    error = 0
+    predicted = [0 for i in range( M )]
+    for i in range(M):
+        predicted[i] = omega[0] + omega[1]*x[i]
+        error = error + (y[i] - predicted[i])**2
+    error = error / M
+    return error
+#R**2 is a score commonly used to see how good a prediction model is, the closer to 1, the better. 
+def compute_r2(M, x, omega, y):
+    u = 0
+    v = 0
+    predicted = [0 for i in range( M )]
+    mean_y = stats.mean(predicted)
+    for i in range(M):
+        predicted[i] = omega[0] + omega[1] * x[i]
+        u += (y[i] - predicted[i])**2
+        v += (y[i] - mean_y)**2
+        R = 1-(u/v)
+    return R
+        
+
+#loop that iterates through the functions needed 
+M_train = len(xtrain)
+M_test = len(xtest)
+predicted = [0 for i in range( M_train )]
+omega = [0,0]
+print(omega)
+alpha = 0.001
+change_error = 1
+last_error = 0
+r2_values = []
+iteration_num = []
+counter = 0
+while change_error > 0.01:
+    change_error = 0
+    counter += 1
+    omega = gradiant_descent_2(M_train, xtrain, omega, ytrain, alpha)
+    current_error = compute_error(M_train, xtrain, omega, ytrain)
+    change_error = abs(current_error - last_error)
+    
+    last_error = current_error
+    current_r2 = compute_r2(M_train, xtrain, omega, ytrain)
+    r2_values.append(current_r2)
+    iteration_num.append(counter)
+    if current_error > 0.1:
+        for k in range(M_train):
+            predicted[k] = omega[0] + omega[1] * xtrain[k]
+        plt.figure()
+        plt.plot(xtrain, ytrain, 'o')
+        plt.plot(xtrain, predicted)
+        plt.xlim(( xmin, xmax ))
+        plt.ylim(( ymin, ymax ))
+        plt.xlabel('synthetic x')
+        plt.ylabel('synthetic y')
+        plt.show()
+    plt.close()
+
+plt.figure()
+plt.plot(xtrain, ytrain, 'o')
+plt.plot(xtrain, predicted)
+plt.xlim(( xmin, xmax ))
+plt.ylim(( ymin, ymax ))
+plt.xlabel('synthetic x')
+plt.ylabel('synthetic y')
+plt.show()    
+
+plt.figure()
+plt.plot(iteration_num, r2_values)   
+plt.show()
